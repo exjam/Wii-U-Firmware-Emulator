@@ -10,21 +10,47 @@ jobs:
       fail-fast: false
       matrix:
         name: [
-          ubuntu-latest
+          ubuntu-latest,
+          windows-2019,
         ]
         include:
           - name: ubuntu-latest
             os: ubuntu-latest
-
+          - name: windows-2019
+            os: windows-2019
     steps:
     - uses: actions/checkout@v1
       with:
         submodules: true
 
-    - name: Install
+    - name: Install (Ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         sudo apt install libssl-dev
 
-    - name: Build
+    - name: Install (Windows)
+      if: startsWith(matrix.os, 'windows')
       run: |
-        make
+        mkdir build
+        cd build
+        pip install conan
+        conan user
+        conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+        conan install .. --build=missing
+
+    - name: Build (Ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        make -j 2
+
+    - name: Configure (Windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        cd build
+        cmake ..
+
+    - name: Build (Windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        cd build
+        cmake --build . --config Release -j 2
